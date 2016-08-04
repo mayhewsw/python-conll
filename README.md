@@ -1,0 +1,1 @@
+A collection sof python scripts for working with CoNLL NER files. 
