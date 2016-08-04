@@ -2,11 +2,9 @@
 
 A collection of python scripts for working with CoNLL NER files.
 
-compareanno.py
+compare.py
 --------------
-
-diff.py
--------
+Compare two folders of annotations that contain the same documents but with different labels.
 
 getstats.py
 -----------
