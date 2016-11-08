@@ -2,14 +2,8 @@
 import os
 from collections import defaultdict
 
-def sortmap(m, k=20):
-    """ Sort a dictionary by value, return the top k """
-    return sorted(m, key=lambda p: p[1], reverse=True)[:k]
-
-
-
 def func(folder1, folder2):
-    """ Written from the perspective of the anntoation software.
+    """ Written from the perspective of the annotation software.
     Old folder is the orig dev folder """
     oldfnames = os.listdir(folder1)
     newfnames = os.listdir(folder2)
@@ -25,7 +19,9 @@ def func(folder1, folder2):
 
             if len(oldlines) != len(newlines):
                 print "!!! length of files doesn't match. Old:",len(oldlines)," New:",len(newlines)
-                return
+                #return
+                newlines = newlines[:-1]
+                
 
             writelines = []
             for old,new in zip(oldlines, newlines):
