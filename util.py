@@ -31,3 +31,14 @@ def call_lm(ngramlist, port=8181, host="localhost"):
     result = check_output(["ngram", "-use-server", str(port) + "@" + host, "-cache-served-ngrams", "-nbest", tmpname], stderr=FNULL)
     return result
 
+def getfnames(fof):
+    """
+    This takes a name which is either a file or a folder. If the name is
+    a file, it returns a list containing only that file. If it is a folder,
+    it returns a list containing the files in the folder.
+    """
+    if os.path.isdir(fof):
+        fnames = map(lambda f: fof + "/" + f, os.listdir(fof))
+    else:
+        fnames = [fof]
+    return fnames
