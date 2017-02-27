@@ -1,8 +1,20 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 import os
 from collections import defaultdict
-import codecs
+import codecs,string
 from subprocess import check_output
+
+punc = list(string.punctuation)
+punc.append(u"।")
+punc.append(u"።")
+punc.append(u"‹")
+punc.append(u"›")
+punc.append(u"”")
+punc.append(u"“")
+punc.append(u"፡")
+punc.append(u"፣")
+punc.append(u"፤")
 
 def sortmap(m, k=20):
     """ Sort a dictionary by value, return the top k """
