@@ -21,7 +21,7 @@ def getstats(fof):
                 if len(line.strip()) == 0: continue
                 toks += 1
 
-                tag = line.split("\t")[0]
+                tag = line.strip().split()[0]
 
                 if tag != "O":
                     tags[tag] += 1

@@ -43,10 +43,11 @@ def compare(folder, folder2, diff):
                 exit()
             
             if sline[5] != sline2[5]:
-                print fname
-                print line, line2
-                print "words don't match between lines"
-                exit()
+                #print fname
+                #print line, line2
+                #print "words don't match between lines"
+                #exit()
+                pass
 
             if sline[0] != sline2[0] and diff:
                 print sline[5] + "\t" + sline[0] + "\t" + sline2[0]

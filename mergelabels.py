@@ -2,7 +2,7 @@
 import os
 from collections import defaultdict
 
-def func(folder1, folder2):
+def func(folder1, folder2, overwrite=False):
     """ Written from the perspective of the annotation software.
     Old folder is the orig dev folder """
     oldfnames = os.listdir(folder1)
@@ -36,14 +36,21 @@ def func(folder1, folder2):
                 #newlines = newlines[:len(oldlines)] ## HAAAAACCCKKKK
                 return
                 
-
             writelines = []
             for old,new in zip(oldlines, newlines):
                 sold = old.split("\t")
                 snew = new.split("\t")
                 # IMPORTANT! All words from oldline are kept. Just label changed.
                 if len(sold) > 5 and len(snew) > 5: # and sold[0] != snew[0]:
-                    sold[0] = snew[0]
+                    
+                    # overwrite will copy O labels from new
+                    if overwrite:
+                        sold[0] = snew[0]
+                    else:
+                        # otherwise only copy if the new label is not O
+                        if snew[0] != "O":
+                            sold[0] = snew[0]
+                        
                     writelines.append("\t".join(sold))
                     
                     #print sold[5] + "\t" + snew[5] 
@@ -59,11 +66,13 @@ def func(folder1, folder2):
 
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser(description="")
+    parser = argparse.ArgumentParser(description="Merge two datasets together. Datasets must be identical in all but labels. Folder 2 will be merged into Folder 1. By default O labels will not be transferred. Use --overwrite option to overwrite O labels.")
 
     parser.add_argument("folder1",help="merge into here")
     parser.add_argument("folder2",help="merge the files from here")
+    parser.add_argument("--overwrite","-o", help="overwrite labels?", action='store_true')
 
     args = parser.parse_args()
-    
-    func(args.folder1, args.folder2)
+
+    print(args.overwrite)
+    func(args.folder1, args.folder2, args.overwrite)
