@@ -5,12 +5,20 @@ from util import getfnames,punc
 import codecs,os.path,os
 from collections import defaultdict
 
-def stem(fof, endingsfname, outfof="", col=5):
+def stem(fof, prefixfname, suffixfname, outfof="", col=5):
     fnames = getfnames(fof)
 
-    with codecs.open(endingsfname, "r", "utf8") as f:
-        line = f.read()
-        endings = line.split()
+    prefixes = []
+    if prefixfname:
+        with codecs.open(prefixfname, "r", "utf8") as f:
+            for line in f:
+                prefixes.append(line.split()[0])
+
+    suffixes = []
+    if suffixfname:
+        with codecs.open(suffixfname, "r", "utf8") as f:
+            for line in f:
+                suffixes.append(line.split()[0])
 
     removals = defaultdict(int)
         
@@ -32,15 +40,28 @@ def stem(fof, endingsfname, outfof="", col=5):
             sline = line.split("\t")
             if len(sline) > col:            
                 w = sline[col]
+
+                # first do prefixes
                 stillgoing = True
                 while stillgoing:
                     stillgoing = False
-                    for ending in endings:
+                    for pref in prefixes:
+                        if w.startswith(pref):
+                            w = w[len(pref):]
+                            stillgoing = True
+                            removals[pref + "-"] += 1
+
+                # then do suffixes
+                stillgoing = True                
+                while stillgoing:
+                    stillgoing = False
+                    for ending in suffixes:
                         if w.endswith(ending):
                             w = w[:-len(ending)]
                             stillgoing = True
-                            removals[ending] += 1
-                if len(w.strip()) > 0:
+                            removals["-" + ending] += 1
+                
+                if len(w.strip()) > 0:                    
                     sline[col] = w.strip()
 
             out.write("\t".join(sline))
@@ -60,11 +81,12 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="")
 
-    parser.add_argument("fof",help="folder to stem")
-    parser.add_argument("outfof",help="empty folder to write to (typically call this ???-stem)")
-    parser.add_argument("endings",help="filename of endings, separated by space.")
+    parser.add_argument("fof",help="file or folder to stem")
+    parser.add_argument("outfof",help="empty file or folder to write to (typically call this ???-stem)")
+    parser.add_argument("--prefixes","--p", help="filename of prefixes, first token of each line")
+    parser.add_argument("--suffixes","--s", help="filename of suffixes, first token of each line")
     parser.add_argument("--col",help="which column to change.", type=int, default=5)
     
     args = parser.parse_args()
     
-    stem(args.fof, args.endings, args.outfof, args.col)
+    stem(args.fof, args.prefixes, args.suffixes, args.outfof, args.col)
