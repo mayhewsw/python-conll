@@ -34,7 +34,7 @@ def func(folder1, folder2, overwrite=False):
             if len(oldlines) != len(newlines):
                 print "!!! length of files doesn't match. Old:",len(oldlines)," New:",len(newlines)
                 #newlines = newlines[:len(oldlines)] ## HAAAAACCCKKKK
-                return
+                #return
                 
             writelines = []
             for old,new in zip(oldlines, newlines):

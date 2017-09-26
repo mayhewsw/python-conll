@@ -1,6 +1,6 @@
 #!/usr/bin/python
 from __future__ import print_function
-from util import getfnames,punc
+from conll.util import getfnames,punc
 import codecs,os.path
 
 def convert(fof, outfof=""):
@@ -19,9 +19,9 @@ def convert(fof, outfof=""):
         
         i = 1
         for line in lines:
-            if line[0] == "#":
-                out.write(line)
-                continue
+            #if line[0] == "#":
+            #    out.write(line)
+            #    continue
 
             # if you come across an empty line, don't write anything.
             if len(line.strip()) == 0:

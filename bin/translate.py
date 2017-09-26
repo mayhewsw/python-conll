@@ -4,7 +4,7 @@ import os
 import codecs
 from collections import defaultdict
 from collections import deque
-import util
+import .util
 
 def translate(folder, outfolder, flist):
     """

@@ -15,6 +15,8 @@ punc.append(u"“")
 punc.append(u"፡")
 punc.append(u"፣")
 punc.append(u"፤")
+punc.remove(u"@")
+punc.remove(u"#")
 
 def sortmap(m, k=20):
     """ Sort a dictionary by value, return the top k """
@@ -50,7 +52,7 @@ def getfnames(fof):
     it returns a list containing the files in the folder.
     """
     if os.path.isdir(fof):
-        fnames = map(lambda f: fof + "/" + f, os.listdir(fof))
+        fnames = list(map(lambda f: fof + "/" + f, os.listdir(fof)))
     else:
         fnames = [fof]
     return fnames

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 from __future__ import print_function
-from util import getfnames,punc
+from .util import getfnames,punc
 import codecs,os.path,os
 from collections import defaultdict
 

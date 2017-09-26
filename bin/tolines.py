@@ -2,7 +2,7 @@
 import os
 from collections import defaultdict
 import codecs
-from util import getfnames
+from conll.util import getfnames
 
 def preparesents(fof, outfile):
     """ Reads CoNLL files to create a file to be used for
@@ -10,7 +10,7 @@ def preparesents(fof, outfile):
 
     fnames = getfnames(fof)
     
-    print "writing sentences to", outfile
+    print("writing sentences to", outfile)
     with codecs.open(outfile, "w", "utf-8") as out:
         for fname in fnames:
             with codecs.open(fname, "r", "utf-8") as f:
@@ -36,7 +36,7 @@ def preparewords(fof, outfile):
 
     fnames = getfnames(fof)
     
-    print "writing words to", outfile
+    print("writing words to", outfile)
     with codecs.open(outfile, "w", "utf-8") as out:    
         for fname in fnames:
             with codecs.open(fname, "r", "utf-8") as f:

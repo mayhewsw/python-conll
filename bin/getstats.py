@@ -1,7 +1,7 @@
 #!/usr/bin/python
 import os
 from collections import defaultdict
-from util import getfnames
+from conll.util import getfnames
 
 def getstats(fof):
     """
@@ -9,10 +9,18 @@ def getstats(fof):
     collect tag and token statistics over the corpus.
     """
 
-    fnames = getfnames(fof)
+    if "," in fof:
+        fofs = fof.split(",")
+
+        fnames = []
+        for f in fofs:
+            fnames.extend(getfnames(f))
+    else:
+        fnames = getfnames(fof)
     
     toks = 0
     totaltags = 0
+    totalstarttags = 0
     tags = defaultdict(int)
     
     for fname in fnames:
@@ -26,17 +34,20 @@ def getstats(fof):
                 if tag != "O":
                     tags[tag] += 1
                     totaltags += 1
+                    if tag[0] == "B":
+                        totalstarttags += 1
                 
-    print "Tokens: {0}".format(toks)
-    print "Total nes: {0}".format(totaltags)
-    print "NE percentage: {0}%".format(round(100*totaltags / float(toks), 2))
-    print "Tag dict:"
+    print("Documents: {0}".format(len(fnames)))
+    print("Tokens: {0}".format(toks))
+    print("Total nes: {0}".format(totalstarttags))
+    print("Total ne tokens: {0}".format(totaltags))
+    print("NE percentage: {0}%".format(round(100*totaltags / float(toks), 2)))
+    print("Tag dict:")
 
     tags = sorted(tags.items())
     
-    
     for t,v in tags:
-        print t,":",v
+        print(t,":",v)
     
 
 if __name__ == "__main__":
