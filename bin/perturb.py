@@ -3,13 +3,16 @@ import os,codecs
 from collections import defaultdict
 from conll.readconll import *
 from conll.util import *
-from random import *
+import random
 
 
 
 def func(folder, outfolder, frac):
+    random.seed(1234567)
+
     fnames = getfnames(folder)
 
+    # this contains the sets of constituents and frequencies
     d = defaultdict(int)
 
     total = 0
@@ -26,12 +29,19 @@ def func(folder, outfolder, frac):
     goal = frac * total
     currnum = 0
     activecons = set()
-    for c in d:
+    
+    # impose ordering
+    ditems = sorted(d.items())
+    # make it random, but consistent.
+    random.shuffle(ditems)
+    
+    for c,freq in ditems:
         activecons.add(c)
-        currnum += d[c]
+        currnum += freq
         if currnum >= goal:
             break
-                    
+
+        
     for fname in fnames:
         cdoc = readconll(fname)
         cons = cdoc.getconstituents()

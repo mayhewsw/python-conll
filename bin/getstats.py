@@ -27,6 +27,7 @@ def getstats(fof):
         with open(fname) as f:
             for line in f:
                 if len(line.strip()) == 0: continue
+                if "DOCSTART" in line: continue
                 toks += 1
 
                 tag = line.strip().split()[0]

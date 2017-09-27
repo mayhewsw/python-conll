@@ -19,10 +19,12 @@ class ConllDocument:
             c = Constituent(label, self.tokens[span[0]:span[1]], span)
             self._constituents.append(c)
 
-    def __init__(self,tokens, constituents):
+    def __init__(self,tokens, constituents, sentenceends):
         self._constituents = constituents
 
         self.labelmap = {}
+
+        self.sentenceends = sentenceends
         
         for c in self._constituents:
             
@@ -67,6 +69,9 @@ class ConllDocument:
 
     def write(self, out):
         for i, token in enumerate(self.tokens):
+            if i in self.sentenceends:
+                out.write("\n")
+            
             if i in self.labelmap:
                 label = self.labelmap[i]
             else:
@@ -75,6 +80,8 @@ class ConllDocument:
             outlst = [label, "0", str(i), "x", "x", token.s, "x", "x", "0"]
             
             out.write("\t".join(outlst) + "\n")
+        out.write("\n")
+                
 
             
     def addConstituent(self, c):

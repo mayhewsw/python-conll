@@ -83,5 +83,5 @@ def readconll_fromlines(lines):
         c = Constituent(label, tokens[span[0]:span[1]], span)
         constituents.append(c)
 
-    cdoc = ConllDocument(tokens, constituents)
+    cdoc = ConllDocument(tokens, constituents, sentenceEndPositions)
     return cdoc
