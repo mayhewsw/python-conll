@@ -1,8 +1,8 @@
 #!/usr/bin/python
-import math
 from collections import defaultdict
 from conll.readconll import readconll
 from conll import util
+from math import sqrt
 
 # this will take one (train) or two directories (train, test) and print
 # comparison stats, as well as individual stats (this should probably be
@@ -36,6 +36,7 @@ def getstats(folders):
 
     # this will only ever have two elements
     namedicts = []
+    tokendicts = []
 
     for folder in folders:
         files = util.getfnames(folder)
@@ -54,6 +55,7 @@ def getstats(folders):
                 tags[c.label] += 1
 
         namedicts.append(names)
+        tokendicts.append(tokens)
 
         print("Folder: {}".format(folder))
         print(" Documents: {}".format(len(files)))
@@ -81,10 +83,29 @@ def getstats(folders):
         print("Names in common: {}".format(weightedinter))
         print("Unique names in common: {}".format(len(inter)))
 
+        t1 = tokendicts[0]
+        t2 = tokendicts[1]
+        inter = set(t1.keys()).intersection(set(t2.keys()))
+
+        weightedinter = 0
+        num = 0
+        d1 = 0
+        d2 = 0 
+        for t in inter:
+            weightedinter += min(t1[t], t2[t])
+            num += t1[t] * t2[t]
+            d1 += t1[t]**2
+            d2 += t2[t]**2
+
+        print("Vocab cos sim: {}".format(num / (sqrt(d1)*sqrt(d2))))
+
+        print("Tokens in common: {}".format(weightedinter))
+        print("Unique tokens in common: {}".format(len(inter)))
+
 
 if __name__ == "__main__":
-    import argparse
-    parser = argparse.ArgumentParser(
+    from argparse import ArgumentParser
+    parser = ArgumentParser(
         description="Getstats on a directory, or on two directories.")
 
     parser.add_argument("folders", help="Folder(s) to getstats on.", nargs="+")

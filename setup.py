@@ -29,8 +29,5 @@ setup(name='conll',
                'bin/tolines.py',
                'bin/translate.py',
                'bin/modifylabels.py',
-               'bin/twitterner.py'
-      ]
-      ,
+               'bin/twitterner.py'],
       zip_safe=False)
-
