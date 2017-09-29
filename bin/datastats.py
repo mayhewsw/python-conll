@@ -4,10 +4,6 @@ from conll.readconll import readconll
 from conll import util
 from math import sqrt
 
-# this will take one (train) or two directories (train, test) and print
-# comparison stats, as well as individual stats (this should probably be
-# folded into the getstats.py script)
-
 """
 desired functions:
 single folder: return
@@ -29,6 +25,22 @@ two folders: return
 """
 
 
+def cos(d1, d2):
+    inter = set(d1.keys()).intersection(set(d2.keys()))
+
+    weightedinter = 0
+    num = 0
+    den1 = 0
+    den2 = 0
+    for t in inter:
+        weightedinter += min(d1[t], d2[t])
+        num += d1[t] * d2[t]
+        den1 += d1[t]**2
+        den2 += d2[t]**2
+
+    return num / (sqrt(den1)*sqrt(den2)), len(inter), weightedinter
+
+
 def getstats(folders):
     if len(folders) > 2:
         print(">2 folders is not supported. Will only operate on {} and {}"
@@ -37,6 +49,7 @@ def getstats(folders):
     # this will only ever have two elements
     namedicts = []
     tokendicts = []
+    tagdicts = []
 
     for folder in folders:
         files = util.getfnames(folder)
@@ -56,6 +69,7 @@ def getstats(folders):
 
         namedicts.append(names)
         tokendicts.append(tokens)
+        tagdicts.append(tags)
 
         print("Folder: {}".format(folder))
         print(" Documents: {}".format(len(files)))
@@ -69,44 +83,36 @@ def getstats(folders):
         print(" Unique / Total", uniqnames / float(numnames))
         print(" Tag dict")
         for t in sorted(tags):
-            print("  {}: {} ({})".format(t, tags[t], tags[t] / float(numnames)))
+            print("  {}: {} ({})"
+                  .format(t, tags[t], tags[t] / float(numnames)))
 
     if len(namedicts) == 2:
-        n1 = namedicts[0]
-        n2 = namedicts[1]
-        inter = set(n1.keys()).intersection(set(n2.keys()))
+        print("Comparison:")
 
-        weightedinter = 0
-        for n in inter:
-            weightedinter += min(n1[n], n2[n])
+        if tagdicts[0].keys() != tagdicts[1].keys():
+            print(" ***Mismatching tag set!***")
 
-        print("Names in common: {}".format(weightedinter))
-        print("Unique names in common: {}".format(len(inter)))
+        namecos, nameinter, nameweight = cos(namedicts[0], namedicts[1])
+        vocabcos, vocabinter, vocabweight = cos(tokendicts[0], tokendicts[1])
+        tagcos, taginter, tagweight = cos(tagdicts[0], tagdicts[1])
 
-        t1 = tokendicts[0]
-        t2 = tokendicts[1]
-        inter = set(t1.keys()).intersection(set(t2.keys()))
+        print(" Names cos sim: {}".format(namecos))
+        print(" Vocab cos sim: {}".format(vocabcos))
+        print(" Tag cos sim: {}".format(tagcos))
 
-        weightedinter = 0
-        num = 0
-        d1 = 0
-        d2 = 0 
-        for t in inter:
-            weightedinter += min(t1[t], t2[t])
-            num += t1[t] * t2[t]
-            d1 += t1[t]**2
-            d2 += t2[t]**2
-
-        print("Vocab cos sim: {}".format(num / (sqrt(d1)*sqrt(d2))))
-
-        print("Tokens in common: {}".format(weightedinter))
-        print("Unique tokens in common: {}".format(len(inter)))
+        numtestnames = sum(namedicts[1].values())
+        print(" %names in test seen in training: {}"
+              .format(nameweight / float(numtestnames)))
+        numtesttokens = sum(tokendicts[1].values())
+        print(" %tokens in test seen in training: {}"
+              .format(vocabweight / float(numtesttokens)))
 
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
     parser = ArgumentParser(
-        description="Getstats on a directory, or on two directories.")
+        description="Getstats on a directory, or on two directories. If " +
+        "there are two directories, they are treated as Train and Test.")
 
     parser.add_argument("folders", help="Folder(s) to getstats on.", nargs="+")
 
