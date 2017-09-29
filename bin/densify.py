@@ -2,98 +2,86 @@
 import os
 from collections import defaultdict
 import codecs
-
-def striptowindow(lines, window):
-    """ takes a list of lines and only keeps words within a window of each tag. """
-    outlines = []
-
-    # keep window in memory
-    # when you see a name, add saved window from behind
-    # add window before
-
-    wlines = []
-    end = -1
-    
-    for i,line in enumerate(lines):
-
-        if not line.startswith("O"):
-            # add window to outlines
-            #continue adding until i+window
-
-            # if inside a region, don't add window
-            # if outside a region, add the latest window
-            if i > end:
-                for w in wlines:
-                    outlines.append(w)
-            
-            end = i+window
-            
-        if end > i:
-            outlines.append(line)
-        else:
-            wlines.append(line)
-            if len(wlines) > window:
-                del wlines[0]
-            
-            
-    return outlines
+from conll import util
 
 
-def densify(fname, outfname, window=-1, removetagless=False):
-    """ Given a file, this will densify the file. That is,
-    remove sentences with no tags, and keep only tokens
-    within a window of labels. By default, this does nothing."""
+def densify(fof, outfof, window=-1):
+    """ Given a file, this will densify the file. That is, keep only tokens
+    within a window of labels. By default (window=-1), this does nothing."""
 
-    with codecs.open(fname, "r", "utf8") as f:
-        lines = f.readlines()
+    fnames = util.getfnames(fof)
+    isdir = os.path.isdir(fof)
+
+    for fname in fnames:
+
+        outlines = set()
+        i = 0
         
-    outlines = []
-    sentlines = []
-    hastag = False
-    
-    for line in lines:            
-        sline = line.split("\t")
-        if len(sline) > 5:
-            tag = sline[0]
-            if tag != "O":
-                hastag = True
-                
-            sentlines.append(line)        
-        else:
-            if hastag or not removetagless:
-                if window > 0:
-                    sentlines = striptowindow(sentlines, window)
-                    
-                for sent in sentlines:
-                    outlines.append(sent)
-                sentlines  = []
-                hastag = False
-                outlines.append("\n")
-            else:
-                sentlines = []
+        with codecs.open(fname, "r", "utf8") as f:
+            lines = f.readlines()
 
-    # in case the last lines are never added in.
-    if len(sentlines) > 0 and (hastag or not removetagless):
-        if window > 0:
-            sentlines = striptowindow(sentlines, window)
+        if window == -1:
+            outwrite = lines
+            containscontent = True
+        else:
+            for line in lines:
+                sline = line.split("\t")
+                if len(sline) > 5:
+                    tag = sline[0]
+                    if tag != "O":
+                        # this is a label.
+                        # add w before and w after.
+                        # don't even need to worry about range checking!
+                        for j in range(i, i-window-1, -1):
+                            if len(lines[j].strip()) == 0:
+                                break
+                            outlines.add(j)
+
+
+                        for j in range(i, i+window+1):
+                            if len(lines[j].strip()) == 0:
+                                break
+                            outlines.add(j)
+                else:
+                    outlines.add(i)
+
+                i += 1
+
+            # conflate empty lines.
+            outwrite = []
+            lastlinewasempty = False
+            containscontent = False
+            for i,line in enumerate(lines):
+                if i in outlines:
+                    isempty = len(line.strip()) == 0
+                    if isempty:
+                        if not lastlinewasempty:
+                            lastlinewasempty = True
+                            outwrite.append(line);
+                    else:
+                        containscontent = True
+                        outwrite.append(line);
+                        lastlinewasempty = False
+
+        if isdir:
+            outfname = outfof + "/" + os.path.basename(fname)
+        else:
+            outfname = outfof
                     
-        for sent in sentlines:
-            outlines.append(sent)
-        
-                
-    with codecs.open(outfname, "w", "utf8") as out:
-        for line in outlines:
-            out.write(line);
+        # if outlines isn't empty...
+        if containscontent:
+            with codecs.open(outfname , "w", "utf8") as out:
+                for line in outwrite:
+                    out.write(line)
 
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser(description="This will densify a conll file. With no options, it does nothing.")
+    parser = argparse.ArgumentParser(description="This will densify a conll file. With no options, it does nothing. If you want to remove all sentences with no tags, run with window=<very large number>")
 
-    parser.add_argument("file",help="Input file name")
-    parser.add_argument("outfile",help="Output file name")
+    parser.add_argument("fof",help="Input file or folder")
+    parser.add_argument("outfof",help="Output file or folder")
     parser.add_argument("--window", "-w",help="Window", type=int, default=-1)
-    parser.add_argument("--removetagless", "-r",help="Remove tagless sentences", action="store_true")
 
     args = parser.parse_args()
     
-    densify(args.file, args.outfile, args.window, args.removetagless)
+    densify(args.fof, args.outfof, args.window)

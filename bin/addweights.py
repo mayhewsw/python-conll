@@ -4,6 +4,20 @@ from collections import defaultdict
 from conll.util import getfnames
 
 def func(folder, outfolder):
+
+    # this will map fname+token -> label
+    goldlabels = {}
+    trainfnames = getfnames("Train2/")
+    for fname in trainfnames:
+        with open(fname) as f:
+            lines = f.readlines()
+
+        for line in lines:
+            sline = line.split("\t")
+            if len(sline) > 5:
+                key = fname.split("/")[-1] + ":::" + sline[2]
+                goldlabels[key] = sline[0]        
+    
     fnames = getfnames(folder)
 
     isfolder = os.path.isdir(folder)
@@ -28,40 +42,49 @@ def func(folder, outfolder):
         outlines = []
         for i,line in enumerate(lines):
 
-            prevtag = False
-            if i > 0:
-                prevline = lines[i-1]
-                spl = prevline.split("\t")
-                prevtag = spl[0][0] == "B" or spl[0][0] == "I"
-
-                    
-            nexttag = False
-            if i < len(lines)-1:
-                nextline = lines[i+1]
-                snl = nextline.split("\t")
-                nexttag = snl[0][0] == "B" or snl[0][0] == "I"
-                
-            
             sline = line.split("\t")
-            if len(sline) > 5:
-                # modify sline[6] to add a weight.
+            if len(sline) > 5:            
+                prevtag = False
+                if i > 0:
+                    prevline = lines[i-1]
+                    spl = prevline.split("\t")
+                    prevtag = spl[0][0] == "B" or spl[0][0] == "I"
 
-                if prevtag or nexttag:
-                    sline[6] = 1.0
-                elif sline[5] in string.punctuation:
-                    sline[6] = 1.0                
+
+                nexttag = False
+                if i < len(lines)-1:
+                    nextline = lines[i+1]
+                    snl = nextline.split("\t")
+                    nexttag = snl[0][0] == "B" or snl[0][0] == "I"
+                
+                # modify sline[6] to add a weight.
+                key = fname.split("/")[-1] + ":::" + sline[2]
+                goldlabel = goldlabels[key]
+                
+                
+                if sline[0] == "O" and goldlabel != "O":
+                    sline[6] = 0.00001
                 elif sline[0] == "O":
-                    sline[6] = 0.001 #wfreq[sline[5]] / (0.75*float(mx))
+                    sline[6] = 0.05
                 else:
                     sline[6] = 1.0
+                    
+                #elif prevtag or nexttag:
+                #    sline[6] = 1.0
+                #elif sline[5] in string.punctuation:
+                #    sline[6] = 1.0                
+                #elif sline[0] == "O":
+                #    sline[6] = 0.001 #wfreq[sline[5]] / (0.75*float(mx))
+                #else:
+                #    sline[6] = 1.0
 
+                weightmass[sline[0]] += sline[6]
 
-
-            weightmass[sline[0]] += sline[6]
-
-            sline[6] = str(sline[6])
-            
-            outlines.append("\t".join(sline))
+                sline[6] = str(sline[6])
+                
+                outlines.append("\t".join(sline))
+            else:
+                outlines.append("\n")
             
         if isfolder:
             fnonly = os.path.basename(fname)
