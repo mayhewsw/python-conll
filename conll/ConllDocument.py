@@ -1,39 +1,36 @@
 #!/home/mayhew2/miniconda3/bin/python
 
+
 class ConllDocument:
     """
     This doc is super cool. The main point of this class
     is to store names, along with their token/character offsets,
-    having read that from conll. 
+    having read that from conll.
     """
 
-    def __init__(self,tokens, spans, labels, sentenceends):
-        self.tokens = tokens
-        self.spans = spans
-        self.labels = labels
-        self.sentenceends = sentenceends
+    # def __init__(self, tokens, spans, labels, sentenceends):
+    #     self.tokens = tokens
+    #     self.spans = spans
+    #     self.labels = labels
+    #     self.sentenceends = sentenceends
 
-        self._constituents = []
-        
-        for label,span in zip(labels,spans):
-            c = Constituent(label, self.tokens[span[0]:span[1]], span)
-            self._constituents.append(c)
+    #     self._constituents = []
+    #     for label, span in zip(labels, spans):
+    #         c = Constituent(label, self.tokens[span[0]:span[1]], span)
+    #         self._constituents.append(c)
 
-    def __init__(self,tokens, constituents, sentenceends):
+    def __init__(self, tokens, constituents, sentenceends):
         self._constituents = constituents
 
         self.labelmap = {}
 
         self.sentenceends = sentenceends
-        
         for c in self._constituents:
-            
             for i in range(c.span[0], c.span[1]):
                 if i == c.span[0]:
                     self.labelmap[i] = "B-" + c.label
                 else:
                     self.labelmap[i] = "I-" + c.label
-            
         self.tokens = tokens
 
     def getconstituents(self):
@@ -46,20 +43,18 @@ class ConllDocument:
             for i in range(c.span[0], c.span[1]):
                 if i in self.labelmap:
                     del self.labelmap[i]
-                        
             return True
-        
         else:
             return False
-            
+
     def findmatches(self, s):
         ss = s.split(" ")
         ret = []
-        
-        for i,t in enumerate(self.tokens):
+
+        for i, t in enumerate(self.tokens):
             if i+len(ss) > len(self.tokens):
                 break
-            span = (i,i+len(ss))
+            span = (i, i+len(ss))
             curr = self.getString(span)
             if s == curr:
                 ret.append(span)
@@ -71,9 +66,9 @@ class ConllDocument:
         for i, token in enumerate(self.tokens):
             if i in self.sentenceends:
                 out.write("\n")
-            
-            if i in self.labelmap:
-                label = self.labelmap[i]
+
+                if i in self.labelmap:
+                    label = self.labelmap[i]
             else:
                 label = "O"
 
