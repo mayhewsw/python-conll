@@ -21,13 +21,5 @@ sss = sorted(myset.items(), key=lambda p: p[1], reverse=True)
 sm = 0
 for s in sss:
     num = s[1]
-    #print(s[0] + num)
+    print(s[0] + "\t" + str(num))
     sm += num
-
-print("Num unique names:", len(sss))
-print("Avg num repetitions", sm / float(len(sss)))
-print("Unique / Total", len(sss)/ float(sm))
-
-with open("names.txt", "w") as out:
-    for n in sss:
-        out.write("\t".join(map(str, n)) + "\n")

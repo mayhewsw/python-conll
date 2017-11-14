@@ -1,117 +1,173 @@
 #!/home/mayhew2/miniconda3/bin/python
 import os,codecs,os.path,math,string
+import random
 from collections import defaultdict
-from conll.util import getfnames
+from conll.util import getfnames, punc
+
+
+def uniform():
+    # TODO: find this parameter programmatically.
+    v = 0.05
+    return v
+
+
+def windowed(d):
+    # d is distance from nearest entity
+    w = 2
+    if d > w:
+        return 0.0
+    else:
+        return 1.0
+
+
+def softwindowed(d):
+    l = 1.1
+    return math.exp(-l * d)
+
+
+def freq(f):
+    Z = 0.25
+    return Z*f
+
+
+def rand():
+    v = 0.00625
+    return random.uniform(0, v)
+
 
 def func(folder, outfolder):
+    random.seed(1234567)
 
-    # this will map fname+token -> label
-    goldlabels = {}
-    trainfnames = getfnames("Train2/")
-    for fname in trainfnames:
-        with open(fname) as f:
-            lines = f.readlines()
-
-        for line in lines:
-            sline = line.split("\t")
-            if len(sline) > 5:
-                key = fname.split("/")[-1] + ":::" + sline[2]
-                goldlabels[key] = sline[0]        
     
     fnames = getfnames(folder)
-
     isfolder = os.path.isdir(folder)
 
+    # word frequencies.
     wfreq = defaultdict(int)
     weightmass = defaultdict(int)
+
+    # make a first pass to gather word
+    # frequencies and distances from entities.
+    dists = defaultdict(lambda: defaultdict(int))
     
+    # is entity?
+    def isent(s):
+        return s != "O"
+
     for fname in fnames:
+
+        # this measures the distance from token i to the nearest
+        # named entity
+
+        lastindex = 0
+
+        # boolean for if cond:
+        # the previous entity boundary was a sentence
+        prevempty = True
+
         with open(fname) as f:
             lines = f.readlines()
-        outlines = []
-        for line in lines:            
+
+        for i, line in enumerate(lines):
             sline = line.split("\t")
             if len(sline) > 5:
                 wfreq[sline[5]] += 1
 
+            ent = isent(sline[0])
+            empty = len(sline) < 5
+            if ent or empty:
+                dists[fname][i] = 0.0
+                # when you see this, then go over all tokens since then...
+                dd = i - lastindex
+
+                startbias = 0
+                endbias = 0
+
+                if empty and prevempty:
+                    # these are just large nubmers...
+                    startbias = 10000
+                    endbias = 10000
+                elif empty:
+                    endbias = 10000
+                elif prevempty:
+                    startbias = 10000
+
+                for j in range(lastindex+1, i):
+                    disttolast = j - lastindex
+                    disttonext = dd - disttolast
+                    dists[fname][j] = min(disttolast + startbias, disttonext + endbias)
+                lastindex = i
+                prevempty = empty
+
+
+    # normalize the word frequencies
     mx = max(wfreq.values())
-                    
+    for w in wfreq:
+        wfreq[w] /= mx
+
     for fname in fnames:
         with open(fname) as f:
             lines = f.readlines()
         outlines = []
-        for i,line in enumerate(lines):
+        for i, line in enumerate(lines):
 
             sline = line.split("\t")
-            if len(sline) > 5:            
-                prevtag = False
-                if i > 0:
-                    prevline = lines[i-1]
-                    spl = prevline.split("\t")
-                    prevtag = spl[0][0] == "B" or spl[0][0] == "I"
+            if len(sline) > 5:
 
-
-                nexttag = False
-                if i < len(lines)-1:
-                    nextline = lines[i+1]
-                    snl = nextline.split("\t")
-                    nexttag = snl[0][0] == "B" or snl[0][0] == "I"
+                sline[7] = str(dists[fname][i])
                 
-                # modify sline[6] to add a weight.
-                key = fname.split("/")[-1] + ":::" + sline[2]
-                goldlabel = goldlabels[key]
-                
-                
-                if sline[0] == "O" and goldlabel != "O":
-                    sline[6] = 0.00001
-                elif sline[0] == "O":
-                    sline[6] = 0.05
-                else:
+                if sline[5] in punc or False:
                     sline[6] = 1.0
-                    
-                #elif prevtag or nexttag:
-                #    sline[6] = 1.0
-                #elif sline[5] in string.punctuation:
-                #    sline[6] = 1.0                
-                #elif sline[0] == "O":
-                #    sline[6] = 0.001 #wfreq[sline[5]] / (0.75*float(mx))
-                #else:
-                #    sline[6] = 1.0
+                elif sline[0] == "O":
+                    # sline[6] = uniform()
+                    #sline[6] = windowed(dists[fname][i])
+                    #sline[6] = softwindowed(dists[fname][i])
+                    #sline[6] = rand()
+                    #sline[6] = freq(wfreq[sline[5]])
+                    # sline[6] = dists[fname][i]
+                    sline[6] = 0.0 if random.random() > 0.02 else 1.0
+                elif "PER" in sline[0]:
+                    sline[6] = 1.0
+                elif "ORG" in sline[0]:
+                    sline[6] = 1.0
+                elif "LOC" in sline[0]:
+                    sline[6] = 1.0
+                elif "MISC" in sline[0]:
+                    sline[6] = 1.0
 
                 weightmass[sline[0]] += sline[6]
-
                 sline[6] = str(sline[6])
-                
                 outlines.append("\t".join(sline))
             else:
                 outlines.append("\n")
-            
+
         if isfolder:
             fnonly = os.path.basename(fname)
-            outpath = outfolder + "/"+ fnonly
+            outpath = outfolder + "/" + fnonly
         else:
             outpath = outfolder
-            
+
         with open(outpath, "w") as out:
             for line in outlines:
-                out.write(line);
+                out.write(line)
 
-    print(weightmass)
-    total = 0
+    for tag in sorted(weightmass):
+        print("{}: {}".format(tag, weightmass[tag]))
+    tags = 0
     for k in weightmass:
         if k == "O":
             continue
-        total += weightmass[k]
-    print("{}, {}, {}".format(total, weightmass["O"], total / float(weightmass["O"])))
-    
+        tags += weightmass[k]
+    print("Final ratio R: {:.2%}".format(tags / sum(weightmass.values())))
+
 
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Change weights of the file!")
 
-    parser.add_argument("folder",help="input file or folder")
-    parser.add_argument("outfolder",help="output file or folder")
+    parser.add_argument("folder", help="input file or folder")
+    parser.add_argument("outfolder", help="output file or folder")
 
     args = parser.parse_args()
-    
+
     func(args.folder, args.outfolder)

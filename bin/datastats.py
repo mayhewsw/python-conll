@@ -56,34 +56,52 @@ def getstats(folders):
         names = defaultdict(int)
         tags = defaultdict(int)
         tokens = defaultdict(int)
+        weights = 0
+        nametokens = 0
+        sentences = 0
 
         for f in files:
             cdoc = readconll(f)
 
+            sentences += len(cdoc.sentenceends)
+
             for t in cdoc.tokens:
                 tokens[t.s] += 1
+                weights += t.weight
 
             for c in cdoc.getconstituents():
-                names[c.label + "\t" + c.surf()] += 1
-                tags[c.label] += 1
+                names[c.label + "\t" + c.surf()] += c.tokens[0].weight
+                # assume that all tokens in a constituent share the same weight.
+                tags[c.label] += c.tokens[0].weight
+                nametokens += len(c.surf().split(" "))
 
         namedicts.append(names)
         tokendicts.append(tokens)
         tagdicts.append(tags)
 
-        print("Folder: {}".format(folder))
-        print(" Documents: {}".format(len(files)))
-        print(" Num tokens: {}".format(sum(tokens.values())))
-        print(" Num unique tokens: {}".format(len(tokens.keys())))
+        numtokens = sum(tokens.values())
         numnames = sum(names.values())
-        print(" Num names: {}".format(numnames))
         uniqnames = len(names.keys())
-        print(" Num unique names: {}".format(uniqnames))
-        print(" Avg num repetitions", numnames / float(uniqnames))
-        print(" Unique / Total", uniqnames / float(numnames))
+
+        print("{}: {}".format("Folder", folder))
+        print(" {:<20}{:>10}".format("Documents", len(files)))
+        print(" {:<20}{:>10,}".format("Num tokens", numtokens))
+        print(" {:<20}{:>10,}".format("Num unique tokens", len(tokens.keys())))
+        print(" {:<20}{:>10,}".format("Num sentences", sentences))
+        print(" {:<20}{:>10,}".format("Num names", numnames))
+        print(" {:<20}{:>10,}".format("Num name tokens", nametokens))
+        print(" {:<20}{:>10,}".format("Num unique names", uniqnames))
+        print(" {:<20}{:>10.2}".format(
+            "Avg num repetitions", numnames / float(uniqnames)))
+        print(" {:<20}{:>10.2}".format(
+            "Unique / total", uniqnames / float(numnames)))
+        print(" {:<20}{:>10.2%}".format(
+            "Tag %", nametokens / numtokens))
+        print(" {:<20}{:>10.2%}".format(
+            "Weighted Tag %", nametokens / weights))
         print(" Tag dict")
         for t in sorted(tags):
-            print("  {}: {} ({})"
+            print("  {}: {} ({:.2%})"
                   .format(t, tags[t], tags[t] / float(numnames)))
 
     if len(namedicts) == 2:
