@@ -1,21 +1,30 @@
 #!/usr/bin/python
 import os
 from collections import defaultdict
+from conll import util
 
-
-def func(folder1, folder2, overwrite=False):
+def func(folder1, folder2, overwrite=False, col=0):
     """ Written from the perspective of the annotation software.
     Old folder is the orig dev folder """
-    oldfnames = os.listdir(folder1)
-    newfnames = os.listdir(folder2)
+    #oldfnames = os.listdir(folder1)
+    #newfnames = os.listdir(folder2)
 
-    for fname in oldfnames:
-        if fname in newfnames:
-            print(fname)
+    if os.path.isdir(folder1):
+        # do something clever
+        pass
+    
+    oldfnames = util.getfnames(folder1)
+    newfnames = util.getfnames(folder2)
+    
+    for oldfname,newfname in zip(oldfnames,newfnames):
+        #if fname not in newfnames:
+        #    print("{} not in {}".format(fname, folder2))
+        #else:
+        if True:
             # open them both, compare lines.
-            with open(folder1 + "/" + fname) as f:
+            with open(oldfname) as f:
                 oldlines = f.readlines()
-            with open(folder2 + "/" + fname) as f:
+            with open(newfname) as f:
                 newlines = f.readlines()
 
             while "DOCSTART" in oldlines[0] or len(oldlines[0].strip()) == 0:
@@ -44,8 +53,9 @@ def func(folder1, folder2, overwrite=False):
                 if len(sold) > 5 and len(snew) > 5:  # and sold[0] != snew[0]:
 
                     # overwrite will copy O labels from new
-                    if overwrite:
-                        sold[0] = snew[0]
+                    if overwrite or col != 0:
+                        #mult = 0.004 if sold[0] == "O" else 1.0
+                        sold[col] = snew[col]
                     else:
                         # otherwise only copy if the new label is not O
                         if snew[0] != "O":
@@ -59,7 +69,7 @@ def func(folder1, folder2, overwrite=False):
                     writelines.append(old)
                     # print("\n")
 
-            with open(folder1 + "/" + fname, "w") as out:
+            with open(oldfname, "w") as out:
                 for line in writelines:
                     out.write(line)
 
@@ -76,8 +86,14 @@ if __name__ == "__main__":
         "-o",
         help="overwrite labels?",
         action='store_true')
+    parser.add_argument(
+        "--column",
+        "-c",
+        type=int,
+        help="which column to merge?",
+        default=0)
 
+    
     args = parser.parse_args()
 
-    print(args.overwrite)
-    func(args.folder1, args.folder2, args.overwrite)
+    func(args.folder1, args.folder2, args.overwrite, args.column)

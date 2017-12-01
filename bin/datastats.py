@@ -83,6 +83,17 @@ def getstats(folders):
         numnames = sum(names.values())
         uniqnames = len(names.keys())
 
+        try:
+            reps = numnames / float(uniqnames)
+            uniqs = uniqnames / float(numnames)
+            tagpercentage = nametokens / numtokens
+            weightedtagpercentage = nametokens / weights
+        except ZeroDivisionError:
+            reps = 0.0
+            uniqs = 0.0
+            tagpercentage = 0.
+            weightedtagpercentage = 0.
+
         print("{}: {}".format("Folder", folder))
         print(" {:<20}{:>10}".format("Documents", len(files)))
         print(" {:<20}{:>10,}".format("Num tokens", numtokens))
@@ -91,14 +102,11 @@ def getstats(folders):
         print(" {:<20}{:>10,}".format("Num names", numnames))
         print(" {:<20}{:>10,}".format("Num name tokens", nametokens))
         print(" {:<20}{:>10,}".format("Num unique names", uniqnames))
-        print(" {:<20}{:>10.2}".format(
-            "Avg num repetitions", numnames / float(uniqnames)))
-        print(" {:<20}{:>10.2}".format(
-            "Unique / total", uniqnames / float(numnames)))
+        print(" {:<20}{:>10.2}".format("Avg num repetitions", reps))
+        print(" {:<20}{:>10.2}".format("Unique / total", uniqs))
+        print(" {:<20}{:>10.2%}".format("Tag %", tagpercentage))
         print(" {:<20}{:>10.2%}".format(
-            "Tag %", nametokens / numtokens))
-        print(" {:<20}{:>10.2%}".format(
-            "Weighted Tag %", nametokens / weights))
+            "Weighted Tag %", weightedtagpercentage))
         print(" Tag dict")
         for t in sorted(tags):
             print("  {}: {} ({:.2%})"

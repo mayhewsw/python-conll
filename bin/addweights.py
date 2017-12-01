@@ -2,18 +2,18 @@
 import os,codecs,os.path,math,string
 import random
 from collections import defaultdict
-from conll.util import getfnames, punc
+from conll.util import getfnames, punc, isnum
 
 
 def uniform():
-    # TODO: find this parameter programmatically.
-    v = 0.05
-    return v
+    """ give each token a uniform weight """
+    theta = 0.023
+    return theta
 
 
 def windowed(d):
     # d is distance from nearest entity
-    w = 2
+    w = 1
     if d > w:
         return 0.0
     else:
@@ -21,23 +21,25 @@ def windowed(d):
 
 
 def softwindowed(d):
-    l = 1.1
-    return math.exp(-l * d)
+    theta = 2.0
+    return theta * math.exp(-d)
 
 
 def freq(f):
-    Z = 0.25
-    return Z*f
-
+    """ Weight a token by it's (normalized) frequency """
+    theta = 5.0
+    return theta*f
 
 def rand():
-    v = 0.00625
-    return random.uniform(0, v)
+    """ This randomly includes/excludes elements """
+    theta = 0.1
+    return 0.0 if random.random() > theta else 1.0
 
 
-def func(folder, outfolder):
+def func(folder, outfolder, mention):
     random.seed(1234567)
 
+    uselearned = True
     
     fnames = getfnames(folder)
     isfolder = os.path.isdir(folder)
@@ -76,7 +78,7 @@ def func(folder, outfolder):
             ent = isent(sline[0])
             empty = len(sline) < 5
             if ent or empty:
-                dists[fname][i] = 0.0
+                dists[fname][i] = 0
                 # when you see this, then go over all tokens since then...
                 dd = i - lastindex
 
@@ -110,22 +112,33 @@ def func(folder, outfolder):
             lines = f.readlines()
         outlines = []
         for i, line in enumerate(lines):
-
-            sline = line.split("\t")
+            
+            sline = line.strip().split("\t")
             if len(sline) > 5:
 
                 sline[7] = str(dists[fname][i])
                 
-                if sline[5] in punc or False:
+                if mention:
+                    # in this case, we don't want weights.
+                    sline[6] = 1.0
+                    if sline[0] != "O":
+                        pref = sline[0][:2]
+                        sline[0] = "B-MNT"
+
+                if sline[5] in punc and uselearned:
+                    sline[6] = 1.0
+                elif isnum(sline[5]) and uselearned:
+                    sline[6] = 1.0
+                elif dists[fname][i] == 1 and uselearned:
                     sline[6] = 1.0
                 elif sline[0] == "O":
-                    # sline[6] = uniform()
-                    #sline[6] = windowed(dists[fname][i])
+                    #sline[6] = uniform()
+                    #sline[6] = 0.0
+                    sline[6] = windowed(dists[fname][i])
+                    #sline[6] = 1.0
                     #sline[6] = softwindowed(dists[fname][i])
-                    #sline[6] = rand()
                     #sline[6] = freq(wfreq[sline[5]])
-                    # sline[6] = dists[fname][i]
-                    sline[6] = 0.0 if random.random() > 0.02 else 1.0
+                    #sline[6] = rand()
                 elif "PER" in sline[0]:
                     sline[6] = 1.0
                 elif "ORG" in sline[0]:
@@ -134,10 +147,13 @@ def func(folder, outfolder):
                     sline[6] = 1.0
                 elif "MISC" in sline[0]:
                     sline[6] = 1.0
+                else:
+                    sline[6] = 1.0
 
                 weightmass[sline[0]] += sline[6]
                 sline[6] = str(sline[6])
-                outlines.append("\t".join(sline))
+                sline[8] = str(wfreq[sline[5]])
+                outlines.append("\t".join(sline) + "\n")
             else:
                 outlines.append("\n")
 
@@ -167,7 +183,8 @@ if __name__ == "__main__":
 
     parser.add_argument("folder", help="input file or folder")
     parser.add_argument("outfolder", help="output file or folder")
+    parser.add_argument("--mention", "-m", help="convert to just mention/not mention data", default=False, action="store_true")
 
     args = parser.parse_args()
 
-    func(args.folder, args.outfolder)
+    func(args.folder, args.outfolder, args.mention)

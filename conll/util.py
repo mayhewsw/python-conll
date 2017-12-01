@@ -22,6 +22,20 @@ punc.append(u".")
 punc.remove(u"@")
 punc.remove(u"#")
 
+
+translator = str.maketrans('', '', "".join(punc))
+
+
+def isnum(x):
+    x = x.translate(translator)
+    try:
+        float(x)
+        return True
+    except:
+        return False
+
+
+
 def sortmap(m, k=20):
     """ Sort a dictionary by value, return the top k """
     return sorted(m.items(), key=lambda p: p[1], reverse=True)[:k]
