@@ -2,7 +2,7 @@
 from collections import defaultdict
 from conll.readconll import readconll
 from conll import util
-from math import sqrt
+from math import sqrt, log
 
 """
 desired functions:
@@ -40,6 +40,29 @@ def cos(d1, d2):
 
     return num / (sqrt(den1)*sqrt(den2)), len(inter), weightedinter
 
+def norm(d):
+    denom = sum(d.values())
+    for k in d:
+        d[k] = d[k] / float(denom)
+    return d
+
+def KL(d1, d2):
+    # augment counts of d1, so
+    # every token in d2 is accounted for.
+    for k in d2:
+        d1[k] += 1
+    
+    d1 = norm(d1)
+    d2 = norm(d2)
+    
+    inter = set(d1.keys()).intersection(set(d2.keys()))
+    total = 0
+    for t in inter:
+        total += d1[t] * log( d1[t] / d2[t])
+
+    return total, len(inter)
+        
+
 
 def getstats(folders):
     if len(folders) > 2:
@@ -66,14 +89,17 @@ def getstats(folders):
             sentences += len(cdoc.sentenceends)
 
             for t in cdoc.tokens:
-                tokens[t.s] += 1
+                if t.weight > 0:
+                    tokens[t.s] += t.weight
                 weights += t.weight
 
             for c in cdoc.getconstituents():
-                names[c.label + "\t" + c.surf()] += c.tokens[0].weight
                 # assume that all tokens in a constituent share the same weight.
-                tags[c.label] += c.tokens[0].weight
-                nametokens += len(c.surf().split(" "))
+                for t in c.tokens:
+                    if t.weight > 0:
+                        nametokens += t.weight
+                        names[c.label + "\t" + c.surf()] += t.weight
+                        tags[c.label] += t.weight
 
         namedicts.append(names)
         tokendicts.append(tokens)
@@ -101,12 +127,11 @@ def getstats(folders):
         print(" {:<20}{:>10,}".format("Num sentences", sentences))
         print(" {:<20}{:>10,}".format("Num names", numnames))
         print(" {:<20}{:>10,}".format("Num name tokens", nametokens))
-        print(" {:<20}{:>10,}".format("Num unique names", uniqnames))
+        print(" {:<20}{:>10,}".format("Num unique name tokens", uniqnames))
         print(" {:<20}{:>10.2}".format("Avg num repetitions", reps))
         print(" {:<20}{:>10.2}".format("Unique / total", uniqs))
         print(" {:<20}{:>10.2%}".format("Tag %", tagpercentage))
-        print(" {:<20}{:>10.2%}".format(
-            "Weighted Tag %", weightedtagpercentage))
+        print(" {:<20}{:>10.2%}".format("Weighted Tag %", weightedtagpercentage))
         print(" Tag dict")
         for t in sorted(tags):
             print("  {}: {} ({:.2%})"
@@ -120,18 +145,22 @@ def getstats(folders):
 
         namecos, nameinter, nameweight = cos(namedicts[0], namedicts[1])
         vocabcos, vocabinter, vocabweight = cos(tokendicts[0], tokendicts[1])
+        vocabkl, inter  = KL(tokendicts[0], tokendicts[1])
         tagcos, taginter, tagweight = cos(tagdicts[0], tagdicts[1])
 
         print(" Names cos sim: {}".format(namecos))
         print(" Vocab cos sim: {}".format(vocabcos))
+        print(" Vocab overlap: {}".format(vocabinter))
+        print(" Vocab KL divg: {}".format(vocabkl))
         print(" Tag cos sim: {}".format(tagcos))
 
         numtestnames = sum(namedicts[1].values())
         print(" %names in test seen in training: {}"
-              .format(nameweight / float(numtestnames)))
+              .format(nameinter / float(numtestnames)))
+        
         numtesttokens = sum(tokendicts[1].values())
         print(" %tokens in test seen in training: {}"
-              .format(vocabweight / float(numtesttokens)))
+              .format(vocabinter / float(numtesttokens)))
 
 
 if __name__ == "__main__":

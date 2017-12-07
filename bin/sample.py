@@ -13,7 +13,7 @@ def uniform():
 
 def windowed(d):
     # d is distance from nearest entity
-    w = 1
+    w = 2
     if d > w:
         return 0.0
     else:
@@ -39,8 +39,6 @@ def rand():
 def func(folder, outfolder, mention):
     random.seed(1234567)
 
-    uselearned = False
-    
     fnames = getfnames(folder)
     isfolder = os.path.isdir(folder)
 
@@ -118,36 +116,24 @@ def func(folder, outfolder, mention):
 
                 sline[7] = str(dists[fname][i])
 
-                if mention:
-                    # in this case, we don't want weights.
-                    sline[6] = 1.0
-                    if sline[0] != "O":
-                        pref = sline[0][:2]
-                        sline[0] = "B-MNT"
-                elif sline[5] in punc and uselearned:
-                    sline[6] = 1.0
-                elif isnum(sline[5]) and uselearned:
-                    sline[6] = 1.0
-                elif dists[fname][i] == 1 and uselearned:
-                    sline[6] = 1.0
+                if (sline[5] in punc or isnum(sline[5])):
+                    theta = 1.0
+                    sline[6] = 0.0 if random.random() > theta else 1.0
                 elif sline[0] == "O":
-                    #sline[6] = rand()
+                    # probability of including
+                    #theta = wfreq[sline[5]]
+                    theta = 0.01
+                    sline[6] = 0.0 if random.random() > theta else 1.0
                     #sline[6] = 0.0
-                    sline[6] = windowed(dists[fname][i])
+                    #sline[6] = windowed(dists[fname][i])
                     #sline[6] = 1.0
                     #sline[6] = softwindowed(dists[fname][i])
-                    #sline[6] = freq(wfreq[sline[5]])
+                    #sline[6] = 
                     #sline[6] = rand()
-                elif "PER" in sline[0]:
-                    sline[6] = 1.0
-                elif "ORG" in sline[0]:
-                    sline[6] = 1.0
-                elif "LOC" in sline[0]:
-                    sline[6] = 1.0
-                elif "MISC" in sline[0]:
-                    sline[6] = 1.0
                 else:
-                    sline[6] = 1.0
+                    # probabil3y of including
+                    theta = 0.3
+                    sline[6] = 0.0 if random.random() > theta else 1.0
 
                 weightmass[sline[0]] += sline[6]
                 sline[6] = str(sline[6])
