@@ -9,21 +9,26 @@ import random
 
 
 def func(folder, outfolder, precision, recall):
+    # This is v1 seed:
     random.seed(1234567)
+    # v2 seed:
+    #random.seed(4343)
 
     fnames = getfnames(folder)
 
     # this contains the sets of constituents and frequencies
     d = defaultdict(int)
-
+    
+    namesdocs = []
     total = 0
-
     labels = list()
 
     for fname in fnames:
         cdoc = readconll(fname)
         cons = cdoc.getconstituents()
 
+        namesdocs.append((fname,cdoc))
+        
         for c in cons:
             d[c.surf()] += 1
             total += 1
@@ -49,17 +54,18 @@ def func(folder, outfolder, precision, recall):
             break
 
     print("Writing to {}".format(outfolder))
-    for fname in fnames:
-        cdoc = readconll(fname)
+    for fname,cdoc in namesdocs:
         cons = cdoc.getconstituents()
 
+        numpos = len(cons)
         for con in cons:
             # discard all the names we don't keep.
             if con.surf() not in activecons:
                 # print(con)
                 cdoc.removeconstituent(con)
+                numpos -= 1
 
-        badspanstoadd = math.ceil(len(cons) / precision - len(cons))
+        badspanstoadd = math.ceil(numpos / precision - numpos)
         for _ in range(badspanstoadd):
             start = random.randrange(0, len(cdoc.tokens)-5)
             length = random.randrange(1, 3)

@@ -2,7 +2,7 @@
 from conll.util import getfnames
 from sklearn.metrics import f1_score, precision_score, recall_score
 
-def func(fof1, fof2):
+def func(fof1, fof2, ignore=False):
     print("THIS ONLY RETURNS TOKEN LEVEL")
     fnames1 = sorted(getfnames(fof1))
     fnames2 = sorted(getfnames(fof2))
@@ -25,10 +25,11 @@ def func(fof1, fof2):
 
         i = 0
         j = 0
+        total = 0
         while i < len(lines) and j < len(lines2):
             sline = lines[i].split("\t")
             sline2 = lines2[j].split("\t")
-
+            
             try:
                 while "-DOCSTART-" in lines[i] or lines[i].strip() == "":
                     i += 1
@@ -43,24 +44,31 @@ def func(fof1, fof2):
             if len(sline) < 5:
                 continue
 
-            gold.append(sline[0])
-            pred.append(sline2[0])
-            if sline[0] != "O":
-                labels.add(sline[0])
+            predweight = sline2[6]
+            total += 1
+            if ignore and float(predweight) == 0.0:
+                pass
+            else:
+                gold.append(sline[0])
+                pred.append(sline2[0])
+                if sline[0] != "O":
+                    labels.add(sline[0])
             
-            if sline[5] != sline2[5]:
-                print("mismatching words!")
-                print(sline[5])
-                print(sline2[5])
-                exit()
+            #if sline[5] != sline2[5]:
+            #    print("mismatching words!")
+            #    print(sline[5])
+            #    print(sline2[5])
+            #    exit()
 
             i += 1
             j += 1
 
     labels = list(labels)
-    print(precision_score(gold, pred, labels=labels, average="weighted"))
-    print(recall_score(gold, pred, labels=list(labels), average="weighted"))
-    print(f1_score(gold, pred, labels=list(labels), average="weighted"))
+    p = precision_score(gold, pred, labels=labels, average="weighted")
+    r = recall_score(gold, pred, labels=list(labels), average="weighted")
+    f1 = f1_score(gold, pred, labels=list(labels), average="weighted")
+    print("Scoring: {} lines out of {}".format(len(pred), total))
+    print("SCORES: {} {} {}".format(p,r,f1))
     
 
 if __name__ == "__main__":
@@ -69,8 +77,9 @@ if __name__ == "__main__":
 
     parser.add_argument("folder", help="gold input file or folder")
     parser.add_argument("outfolder", help="predicted output file or folder")
+    parser.add_argument("--ignore", help="ignore all words with a 0 weight.", action="store_true")
 
     args = parser.parse_args()
 
-    func(args.folder, args.outfolder)
+    func(args.folder, args.outfolder, args.ignore)
 

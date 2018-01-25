@@ -4,14 +4,12 @@ import random
 from collections import defaultdict
 from conll.util import getfnames, punc, isnum
 
-
 def uniform():
     """ give each token a uniform weight """
-    theta = 0.1
+    theta = 0.2
     return theta
 
-
-def windowed(d):
+def window(d):
     # d is distance from nearest entity
     w = 1
     if d > w:
@@ -19,35 +17,28 @@ def windowed(d):
     else:
         return 1.0
 
-
-def softwindowed(d):
-    theta = 2.0
+def softwindow(d):
+    theta = 1.0
     return theta * math.exp(-d)
-
 
 def freq(f):
     """ Weight a token by it's (normalized) frequency """
     theta = 1.0
     return theta*f
 
-def rand():
-    """ This randomly includes/excludes elements """
-    theta = 0.4
-    return 0.0 if random.random() > theta else 1.0
 
-
-def func(folder, outfolder, mention):
+def func(folder, outfolder, mention, methods):
+    """ methods is a list. Can contain: punc, window, softwindow, frequency, uniform """
+    
     random.seed(1234567)
 
-    uselearned = False
+    uselearned = True
     
     fnames = getfnames(folder)
     isfolder = os.path.isdir(folder)
 
     # word frequencies.
     wfreq = defaultdict(int)
-    weightmass = defaultdict(int)
-
     # make a first pass to gather word
     # frequencies and distances from entities.
     dists = defaultdict(lambda: defaultdict(int))
@@ -122,34 +113,33 @@ def func(folder, outfolder, mention):
                     # in this case, we don't want weights.
                     sline[6] = 1.0
                     if sline[0] != "O":
-                        pref = sline[0][:2]
                         sline[0] = "B-MNT"
-                elif sline[5] in punc and uselearned:
-                    sline[6] = 1.0
-                elif isnum(sline[5]) and uselearned:
-                    sline[6] = 1.0
-                elif dists[fname][i] == 1 and uselearned:
-                    sline[6] = 1.0
                 elif sline[0] == "O":
-                    #sline[6] = rand()
-                    #sline[6] = 0.0
-                    sline[6] = windowed(dists[fname][i])
-                    #sline[6] = 1.0
-                    #sline[6] = softwindowed(dists[fname][i])
-                    #sline[6] = freq(wfreq[sline[5]])
-                    #sline[6] = rand()
-                elif "PER" in sline[0]:
-                    sline[6] = 1.0
-                elif "ORG" in sline[0]:
-                    sline[6] = 1.0
-                elif "LOC" in sline[0]:
-                    sline[6] = 1.0
-                elif "MISC" in sline[0]:
-                    sline[6] = 1.0
+
+                    # These all give weights to all methods.
+                    if "softwindow" in methods:
+                        sline[6] = softwindow(dists[fname][i])
+                        
+                    if "freq" in methods:
+                        sline[6] = freq(wfreq[sline[5]])
+                        
+                    if "uniform" in methods:
+                        sline[6] = uniform()
+
+                    # The following give weights to just a few.
+                    if "punc" in methods:
+                        if sline[5] in punc or isnum(sline[5]):
+                            sline[6] = 1.0
+
+                    if "window" in methods:
+                        if dists[fname][i] <= 1:
+                            sline[6] = 1.0
+                        
+                    if sline[6] == "x":
+                        sline[6] = 0.0
                 else:
                     sline[6] = 1.0
 
-                weightmass[sline[0]] += sline[6]
                 sline[6] = str(sline[6])
                 sline[8] = str(wfreq[sline[5]])
                 outlines.append("\t".join(sline) + "\n")
@@ -166,16 +156,6 @@ def func(folder, outfolder, mention):
             for line in outlines:
                 out.write(line)
 
-    for tag in sorted(weightmass):
-        print("{}: {}".format(tag, weightmass[tag]))
-    tags = 0
-    for k in weightmass:
-        if k == "O":
-            continue
-        tags += weightmass[k]
-    print("Final ratio R: {:.2%}".format(tags / sum(weightmass.values())))
-
-
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Change weights of the file!")
@@ -183,7 +163,7 @@ if __name__ == "__main__":
     parser.add_argument("folder", help="input file or folder")
     parser.add_argument("outfolder", help="output file or folder")
     parser.add_argument("--mention", "-m", help="convert to just mention/not mention data", default=False, action="store_true")
+    parser.add_argument("--methods", help="comma separated list of methods", default="")
 
     args = parser.parse_args()
-
-    func(args.folder, args.outfolder, args.mention)
+    func(args.folder, args.outfolder, args.mention, args.methods.split(","))
