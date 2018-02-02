@@ -26,14 +26,13 @@ def freq(f):
     theta = 1.0
     return theta*f
 
+allowedmethods=["punc","window","softwindow","freq","uniform", "random"]
 
 def func(folder, outfolder, mention, methods):
-    """ methods is a list. Can contain: punc, window, softwindow, frequency, uniform """
+    """ methods is a list. Can contain: punc, window, softwindow, freq, uniform, random """
     
     random.seed(1234567)
 
-    uselearned = True
-    
     fnames = getfnames(folder)
     isfolder = os.path.isdir(folder)
 
@@ -98,6 +97,10 @@ def func(folder, outfolder, mention, methods):
     for w in wfreq:
         wfreq[w] /= mx
 
+    for method in methods:
+        if len(method) > 0 and method not in allowedmethods:
+            print("Warning: {} not a supported method. Ignoring.".format(method))
+        
     for fname in fnames:
         with open(fname) as f:
             lines = f.readlines()
@@ -116,24 +119,30 @@ def func(folder, outfolder, mention, methods):
                         sline[0] = "B-MNT"
                 elif sline[0] == "O":
 
+                    sline[6] = 0.0
+
+                    if "random" in methods:
+                        if random.random() < 0.25:
+                            sline[6] += 1.0
+                    
                     # These all give weights to all methods.
                     if "softwindow" in methods:
-                        sline[6] = softwindow(dists[fname][i])
+                        sline[6] += softwindow(dists[fname][i])
                         
                     if "freq" in methods:
-                        sline[6] = freq(wfreq[sline[5]])
+                        sline[6] += freq(wfreq[sline[5]])
                         
                     if "uniform" in methods:
-                        sline[6] = uniform()
+                        sline[6] += uniform()
 
                     # The following give weights to just a few.
                     if "punc" in methods:
                         if sline[5] in punc or isnum(sline[5]):
-                            sline[6] = 1.0
+                            sline[6] += 1.0
 
                     if "window" in methods:
                         if dists[fname][i] <= 1:
-                            sline[6] = 1.0
+                            sline[6] += 1.0
                         
                     if sline[6] == "x":
                         sline[6] = 0.0
@@ -163,7 +172,7 @@ if __name__ == "__main__":
     parser.add_argument("folder", help="input file or folder")
     parser.add_argument("outfolder", help="output file or folder")
     parser.add_argument("--mention", "-m", help="convert to just mention/not mention data", default=False, action="store_true")
-    parser.add_argument("--methods", help="comma separated list of methods", default="")
+    parser.add_argument("--methods", help="comma separated list of methods. Accepted values: " + str(allowedmethods), default="")
 
     args = parser.parse_args()
     func(args.folder, args.outfolder, args.mention, args.methods.split(","))
