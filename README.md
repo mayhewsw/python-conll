@@ -2,26 +2,19 @@
 
 A collection of python scripts for working with CoNLL NER files.
 
-compare.py
---------------
-Compare two folders of annotations that contain the same documents but with different labels.
+# Installation
 
-getstats.py
------------
-This will give statistics on a (labeled) corpus, such as number of tokens, and number of entities of each type.
+```
+$ https://github.com/CogComp/python-conll.git
+$ cd python-conll
+$ python setup.py install
+```
 
-mergelabels.py
---------------
-Given a folder that is a labeled version of an original folder, this merges the updated labels back to the original.
+# CoNLL NER Format
+This library assumes a column format, where columns are separated by tabs, and columns
+tend to have specific meanings.
 
-preparelm.py
-------------
-This gathers words or sentences from a collection of CoNLL files in preparation for an LM or word vector training.
+Column 0 is the tag.
+Column 5 is the word.
 
-translate.py
-------------
-Given a word mapping file, this translates a set of CoNLL files.
-
-util.py
--------
-Some utilities.
+All other columns can mean whatever you want them to. For example, column 6 often holds the weight. See an example file [here](conll/tests/sample.txt.conll). 
