@@ -25,6 +25,9 @@ punc.remove(u"#")
 
 translator = str.maketrans('', '', "".join(punc))
 
+def ispuncnum(x):
+    # TODO: this could be updated to include lists of punctuation...
+    return x in punc or isnum(x)
 
 def isnum(x):
     x = x.translate(translator)

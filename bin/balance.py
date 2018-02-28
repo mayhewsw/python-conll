@@ -2,7 +2,7 @@
 import os,codecs,os.path,math,string
 import random
 from collections import defaultdict
-from conll.util import getfnames, punc, isnum
+from conll.util import getfnames, punc, isnum, ispuncnum
 from numpy.random import choice
 
 
@@ -21,15 +21,24 @@ def balance(fname, outfname, bstar, weighted):
     numpos = 0
     numneg = 0
 
+    # keeps track of tokens that are punctuation or numbers so we can artificially increase the weight.
+    punctokens = set()
+    
     with open(fname) as f:
         lines = f.readlines()
 
     for i, line in enumerate(lines):
         sline = line.strip().split("\t")
         if len(sline) > 5 and "DOCSTART" not in line:
+            if ispuncnum(sline[5]):
+                punctokens.add(i)
+
+            if sline[5].startswith("http"):
+                punctokens.add(i)
+
             confs = sline[6].strip(",").split(",")
             if len(confs) == 1:
-                # assume that the number there is the O confidence. 
+                # assume that the number there is the O confidence if it is also labeled as O                
                 oweight = float(sline[6])
             else:
                 scorelist = list(map(lambda p: p.split(":"), sline[6].strip(",").split(",")))
@@ -41,9 +50,16 @@ def balance(fname, outfname, bstar, weighted):
                 weights[i] = max(0, oweight)
                 numneg += 1
             else:
-                weights[i] = oweight
+                # if this is uncommented, then the overall calculation is confused.
+                #weights[i] = oweight
                 numpos += 1
 
+    # before we do the balancing, apply constraints about punctuation and numbers.
+    maxweight = max(weights.values())
+    for i in punctokens:
+        weights[i] = maxweight
+
+                
     total = sum(weights.values())
     totalmass = (1-bstar) * numpos / bstar
 
@@ -88,11 +104,11 @@ def balance(fname, outfname, bstar, weighted):
                 # Mention tokens stay the same.
 
                 # If a mention token is predicted as being an O, make that happen.
-                if weights[i] > 0:
-                    sline[0] = "O"
-                    sline[6] = weights[i]
-                else:
-                    sline[6] = 1.0
+                #if weights[i] > 0:
+                #    sline[0] = "O"
+                #    sline[6] = weights[i]
+                #else:
+                sline[6] = 1.0
 
             sline[6] = str(sline[6])
             outlines.append("\t".join(sline) + "\n")

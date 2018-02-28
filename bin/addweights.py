@@ -28,7 +28,7 @@ def freq(f):
 
 allowedmethods=["punc","window","softwindow","freq","uniform", "random"]
 
-def func(folder, outfolder, mention, methods):
+def func(folder, outfolder, mention, methods, defaultweight):
     """ methods is a list. Can contain: punc, window, softwindow, freq, uniform, random """
     
     random.seed(1234567)
@@ -119,8 +119,13 @@ def func(folder, outfolder, mention, methods):
                         sline[0] = "B-MNT"
                 elif sline[0] == "O":
 
-                    sline[6] = 0.0
-
+                    if defaultweight is not None:
+                        sline[6] = defaultweight
+                    try:
+                        sline[6] = float(sline[6])
+                    except Exception:
+                        sline[6] = 0.0
+                    
                     if "random" in methods:
                         if random.random() < 0.25:
                             sline[6] += 1.0
@@ -173,6 +178,7 @@ if __name__ == "__main__":
     parser.add_argument("outfolder", help="output file or folder")
     parser.add_argument("--mention", "-m", help="convert to just mention/not mention data", default=False, action="store_true")
     parser.add_argument("--methods", help="comma separated list of methods. Accepted values: " + str(allowedmethods), default="")
+    parser.add_argument("--defaultweight", help="starting weight, default is to use present values, or 1.0", type=float)
 
     args = parser.parse_args()
-    func(args.folder, args.outfolder, args.mention, args.methods.split(","))
+    func(args.folder, args.outfolder, args.mention, args.methods.split(","), args.defaultweight)
