@@ -44,7 +44,11 @@ def func(fof1, fof2, ignore=False):
             if len(sline) < 5:
                 continue
 
-            predweight = sline2[6]
+            try:
+                predweight = sline2[6]
+            except Exception:
+                predweight = 1.0
+                
             total += 1
             if ignore and float(predweight) == 0.0:
                 pass

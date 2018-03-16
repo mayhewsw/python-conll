@@ -32,14 +32,14 @@ def densify(fof, outfof, window=-1):
                         # this is a label.
                         # add w before and w after.
                         # don't even need to worry about range checking!
-                        for j in range(i, i-window-1, -1):
-                            if len(lines[j].strip()) == 0:
+                        for j in range(i, i-window-1, -1):                            
+                            if j < 0 or len(lines[j].strip()) == 0:
                                 break
                             outlines.add(j)
 
 
                         for j in range(i, i+window+1):
-                            if len(lines[j].strip()) == 0:
+                            if j >= len(lines) or len(lines[j].strip()) == 0:
                                 break
                             outlines.add(j)
                 else:

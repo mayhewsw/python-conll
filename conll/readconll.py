@@ -13,14 +13,17 @@ def readconll(fname):
 
 def readconll_fromlines(lines):
 
-    spans = []
-    labels = []
+    spans = set()
+    labels = set()
 
     sentenceEndPositions = []
-    tokens = []
+    
+    # tokens contains pairs: (tokenindex, tokenobject)
+    tokens = set()
     start = -1
     label = ""
 
+    # i represents the token index.
     i = 0
     for line in lines:
         sline = line.split("\t")
@@ -29,9 +32,9 @@ def readconll_fromlines(lines):
             # two consecutive entities.
             if start > -1:
                 # peel off a constituent if it exists.
-                spans.append((start, i))
-                labels.append(label)
-
+                spans.add((start, i))
+                labels.add((label, i))
+                
             start = i
             label = sline[0].split("-")[1]
 
@@ -49,22 +52,31 @@ def readconll_fromlines(lines):
             # it's O or it's empty
             if start > -1:
                 # peel off a constituent if it exists.
-                spans.append((start, i))
-                labels.append(label)
+                spans.add((start, i))
+                labels.add((label, i))
 
             label = ""
             start = -1
 
         # add the word form to the sentence.
         if len(sline) > 5 and sline[5] != "-DOCSTART-" and len(sline[5].strip()) > 0:
-            tokens.append(Token(sline[2], sline[3], sline[5], sline[6]))
+            tokens.add((i, Token(sline[2], sline[3], sline[5], sline[6])))
             i += 1
 
     # in case the very last line is an NE.
     if start > -1:
-        spans.append((start, i))
-        labels.append(label)
+        spans.add((start, i))
+        labels.add((label, i))
 
+    # Convert sets to lists.
+    spans = sorted(spans, key=lambda p: p[1])
+    labels = map(lambda p: p[0], sorted(labels, key=lambda p: p[1]))
+
+    tokens = list(map(lambda p: p[1], sorted(tokens, key=lambda p: p[0])))
+    
+    #print(spans)
+    #print(list(labels))
+    
     # in case there are no empty lines.
     if i not in sentenceEndPositions:
         sentenceEndPositions.append(i)
