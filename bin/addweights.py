@@ -6,7 +6,7 @@ from conll.util import getfnames, punc, isnum
 
 def uniform():
     """ give each token a uniform weight """
-    theta = 0.2
+    theta = 0.01
     return theta
 
 def window(d):

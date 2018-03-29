@@ -1,12 +1,12 @@
 #!/home/mayhew2/miniconda3/bin/python
 import os,codecs
 from collections import defaultdict
-from readconll import *
+from conll.readconll import *
 
 
 
 def outline(menid, mention,docid,start,end,label):
-    return "\t".join(["UIUC",menid,mention,docid+":"+str(start)+"-"+str(end),"NULL", label, "NAM", "1.0"])
+    return "\t".join(["UPENN",menid,mention,docid+":"+str(start)+"-"+str(end),"NULL", label, "NAM", "1.0"])
     
 
 def func(folder, outfile):
@@ -22,8 +22,10 @@ def func(folder, outfile):
         cdoc = readconll(folder + "/" + fname)
 
         i += 1
-        for span,label in zip(cdoc.spans, cdoc.labels):
+        for c in cdoc.getconstituents():
             #print(span, label)
+            span = c.span
+            label = c.label
             mention = cdoc.getString(span)
             nowbreak=True
             start,end = cdoc.getCharSpan(span)

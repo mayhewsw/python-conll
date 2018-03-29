@@ -71,7 +71,9 @@ def func(folder1, folder2, overwrite=False, col=0):
             # IMPORTANT! All words from oldline are kept. Just label
             # changed.
             if len(sold) > 5 and len(snew) > 5:  # and sold[0] != snew[0]:
-
+                if sold[5] != snew[5]:
+                    print(sold[5], snew[5])
+                
                 # overwrite will copy O labels from new
                 if overwrite or col != 0:
                     #mult = 0.004 if sold[0] == "O" else 1.0
